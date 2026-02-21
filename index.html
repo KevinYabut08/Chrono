@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chrono</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="styles.css">
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+
+</head>
+<body>
+    <!-- Theme Toggle (visible on both auth and main pages) -->
+    <div style="position: fixed; top: 1rem; right: 1rem; z-index: 1001;">
+        <div class="theme-toggle">
+            <button class="theme-btn active" onclick="setTheme('light')">
+                <i class="fas fa-sun"></i>
+                light
+            </button>
+            <button class="theme-btn" onclick="setTheme('dark')">
+                <i class="fas fa-moon"></i>
+                dark
+            </button>
+        </div>
+    </div>
+
+    <!-- Auth Page -->
+    <div class="auth-page" id="authPage">
+        <div class="auth-card">
+            <div class="auth-header">
+                <div class="logo">
+                    <i class="fas fa-timeline"></i>
+                    chrono
+                </div>
+                <p>your timeline journal</p>
+            </div>
+
+            <div class="auth-tabs">
+                <button class="auth-tab active" onclick="switchAuthTab('login')">sign in</button>
+                <button class="auth-tab" onclick="switchAuthTab('register')">sign up</button>
+            </div>
+
+            <!-- Login Form -->
+            <div class="auth-form active" id="loginForm">
+                <div class="form-group">
+                    <label>email</label>
+                    <input type="email" id="loginEmail" placeholder="your@email.com">
+                </div>
+                <div class="form-group">
+                    <label>password</label>
+                    <input type="password" id="loginPassword" placeholder="••••••••">
+                </div>
+                <div class="error-message" id="loginError"></div>
+                <button class="btn" onclick="loginWithEmail()">
+                    <i class="fas fa-arrow-right"></i>
+                    sign in
+                </button>
+                
+                <div class="divider">
+                    <span>or</span>
+                </div>
+                
+                <button class="btn btn-google" onclick="loginWithGoogle()">
+                    <i class="fab fa-google"></i>
+                    continue with google
+                </button>
+            </div>
+
+            <!-- Register Form -->
+            <div class="auth-form" id="registerForm">
+                <div class="form-group">
+                    <label>name</label>
+                    <input type="text" id="registerName" placeholder="your name">
+                </div>
+                <div class="form-group">
+                    <label>email</label>
+                    <input type="email" id="registerEmail" placeholder="your@email.com">
+                </div>
+                <div class="form-group">
+                    <label>password</label>
+                    <input type="password" id="registerPassword" placeholder="••••••••">
+                </div>
+                <div class="error-message" id="registerError"></div>
+                <button class="btn" onclick="registerWithEmail()">
+                    <i class="fas fa-user-plus"></i>
+                    create account
+                </button>
+                
+                <div class="divider">
+                    <span>or</span>
+                </div>
+                
+                <button class="btn btn-google" onclick="loginWithGoogle()">
+                    <i class="fab fa-google"></i>
+                    continue with google
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main App -->
+    <div class="main-app" id="mainApp">
+        <!-- Top Navigation -->
+        <nav class="top-nav">
+            <div class="nav-container">
+                <div class="nav-left">
+                    <div class="logo" onclick="switchPage('timeline')">
+                        <i class="fas fa-timeline"></i>
+                        chrono
+                    </div>
+                    <div class="nav-links">
+                        <div class="nav-link active" onclick="switchPage('timeline')">
+                            <i class="fas fa-stream"></i>
+                            timeline
+                        </div>
+                        <div class="nav-link" onclick="switchPage('universes')">
+                            <i class="fas fa-globe"></i>
+                            universes
+                        </div>
+                        <div class="nav-link" onclick="switchPage('capsules')">
+                            <i class="fas fa-hourglass"></i>
+                            capsules
+                        </div>
+                    </div>
+                </div>
+                <div class="nav-right">
+                    <div class="user-profile" onclick="switchPage('profile')">
+                        <span class="user-name" id="navName">Loading...</span>
+                        <div class="user-avatar" id="navAvatar">...</div>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Main Layout -->
+        <div class="main-layout">
+            <!-- Left Sidebar -->
+            <aside class="sidebar">
+                <div class="sidebar-section">
+                    <div class="sidebar-title">
+                        <i class="fas fa-user"></i>
+                        your timeline
+                    </div>
+                    <div class="menu-item active">
+                        <i class="fas fa-stream"></i>
+                        <span>main timeline</span>
+                    </div>
+                    <div class="menu-item">
+                        <i class="fas fa-code-branch"></i>
+                        <span>alternate paths</span>
+                    </div>
+                    <div class="menu-item">
+                        <i class="fas fa-clock"></i>
+                        <span>memories</span>
+                    </div>
+                </div>
+
+                <div class="sidebar-section">
+                    <div class="sidebar-title">
+                        <i class="fas fa-chart-line"></i>
+                        stats
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">events</span>
+                        <span class="stat-value" id="statEvents">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">universes</span>
+                        <span class="stat-value" id="statUniverses">4</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">capsules</span>
+                        <span class="stat-value" id="statCapsules">0</span>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- Main Content -->
+            <main class="main-content">
+                <!-- Timeline Page -->
+                <div class="page active" id="timelinePage">
+                    <div class="page-header">
+                        <h2>your timeline</h2>
+                        <p>important moments across your life</p>
+                    </div>
+
+                    <div class="timeline-container">
+                        <div class="timeline-line"></div>
+                        <div class="timeline-events" id="timelineEvents">
+                            <!-- Events will be inserted here -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Universes Page -->
+                <div class="page" id="universesPage">
+                    <div class="page-header">
+                        <h2>parallel universes</h2>
+                        <p>alternate versions of reality</p>
+                    </div>
+
+                    <div class="cards-grid" id="universesGrid">
+                        <!-- Universes will be inserted here -->
+                    </div>
+                </div>
+
+                <!-- Capsules Page -->
+                <div class="page" id="capsulesPage">
+                    <div class="page-header">
+                        <h2>time capsules</h2>
+                        <p>messages to your future self</p>
+                    </div>
+
+                    <div class="cards-grid" id="capsulesGrid">
+                        <!-- Capsules will be inserted here -->
+                    </div>
+                </div>
+
+                <!-- Profile Page -->
+                <div class="page" id="profilePage">
+                    <div class="page-header">
+                        <h2>your profile</h2>
+                        <p>manage your account</p>
+                    </div>
+
+                    <div class="event-card">
+                        <div style="display: flex; align-items: center; gap: 2rem; margin-bottom: 2rem;">
+                            <div style="width: 80px; height: 80px; background: var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 2.5rem; color: white;" id="profileAvatar">
+                                A
+                            </div>
+                            <div>
+                                <h3 id="profileName">Loading...</h3>
+                                <p style="color: var(--text-secondary);" id="profileEmail">loading...</p>
+                                <p style="color: var(--text-tertiary);">member since <span id="profileDate">2024</span></p>
+                            </div>
+                        </div>
+
+                        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 2rem;">
+                            <div style="text-align: center; padding: 1rem; background: var(--surface-light); border-radius: var(--radius-md);">
+                                <div style="font-size: 1.5rem; font-weight: 600; color: var(--primary);" id="profileEvents">0</div>
+                                <div style="font-size: 0.8rem; color: var(--text-secondary);">events</div>
+                            </div>
+                            <div style="text-align: center; padding: 1rem; background: var(--surface-light); border-radius: var(--radius-md);">
+                                <div style="font-size: 1.5rem; font-weight: 600; color: var(--primary);" id="profileUniverses">4</div>
+                                <div style="font-size: 0.8rem; color: var(--text-secondary);">universes</div>
+                            </div>
+                            <div style="text-align: center; padding: 1rem; background: var(--surface-light); border-radius: var(--radius-md);">
+                                <div style="font-size: 1.5rem; font-weight: 600; color: var(--primary);" id="profileCapsules">0</div>
+                                <div style="font-size: 0.8rem; color: var(--text-secondary);">capsules</div>
+                            </div>
+                        </div>
+
+                        <button class="btn" style="background: var(--error);" onclick="logout()">
+                            <i class="fas fa-sign-out-alt"></i>
+                            sign out
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Loading Spinner -->
+                <div class="loading" id="loading">
+                    <div class="spinner"></div>
+                    <p>loading your timeline...</p>
+                </div>
+            </main>
+
+            <!-- Right Sidebar -->
+            <aside class="right-sidebar">
+                <div class="widget">
+                    <div class="widget-header">
+                        <h4>quick stats</h4>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">total events</span>
+                        <span class="stat-value" id="quickStatsEvents">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">past events</span>
+                        <span class="stat-value" id="quickStatsPast">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">future goals</span>
+                        <span class="stat-value" id="quickStatsFuture">0</span>
+                    </div>
+                </div>
+
+                <div class="widget">
+                    <div class="widget-header">
+                        <h4>quick tips</h4>
+                    </div>
+                    <ul style="list-style: none; color: var(--text-secondary); font-size: 0.85rem;">
+                        <li style="margin-bottom: 0.75rem;">• click + to add events</li>
+                        <li style="margin-bottom: 0.75rem;">• explore alternate timelines</li>
+                        <li style="margin-bottom: 0.75rem;">• create time capsules</li>
+                        <li>• toggle theme in top right</li>
+                    </ul>
+                </div>
+            </aside>
+        </div>
+
+        <!-- Floating Action Button -->
+        <div class="fab" onclick="openCreateModal()">
+            <i class="fas fa-plus"></i>
+        </div>
+
+        <!-- Create Event Modal -->
+        <div class="modal" id="createModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>add timeline event</h3>
+                    <i class="fas fa-times close-btn" onclick="closeCreateModal()"></i>
+                </div>
+
+                <div class="form-group">
+                    <label>title</label>
+                    <input type="text" id="eventTitle" placeholder="what happened?">
+                </div>
+
+                <div class="form-group">
+                    <label>description</label>
+                    <textarea id="eventDescription" placeholder="describe the moment..."></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label>year</label>
+                    <input type="number" id="eventYear" placeholder="2024" value="2024">
+                </div>
+
+                <div class="form-group">
+                    <label>dimension</label>
+                    <div class="dimension-selector">
+                        <div class="dimension-option selected" onclick="selectEventDimension('past', this)">
+                            <i class="fas fa-history"></i>
+                            past
+                        </div>
+                        <div class="dimension-option" onclick="selectEventDimension('present', this)">
+                            <i class="fas fa-clock"></i>
+                            present
+                        </div>
+                        <div class="dimension-option" onclick="selectEventDimension('future', this)">
+                            <i class="fas fa-rocket"></i>
+                            future
+                        </div>
+                    </div>
+                </div>
+
+                <button class="btn" onclick="createEvent()">
+                    <i class="fas fa-plus"></i>
+                    add to timeline
+                </button>
+            </div>
+        </div>
+
+        <!-- Toast Notification -->
+        <div class="toast" id="toast">
+            <i class="fas fa-check-circle"></i>
+            <span id="toastMessage">timeline updated</span>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
