@@ -61,6 +61,7 @@ let universes = [
 
 let capsules = [];
 let selectedEventDimension = 'past';
+let currentUniverse = 'alpha prime';
 
 // ==================== LOADING INDICATOR FUNCTIONS ====================
 function showLoading(message = 'Loading...') {
@@ -103,6 +104,11 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Check AI status
     setTimeout(checkAIStatus, 1000);
+    
+    // Load saved universe
+    const savedUniverse = localStorage.getItem('chrono_current_universe') || 'alpha prime';
+    currentUniverse = savedUniverse;
+    updateUniverseTheme(savedUniverse);
 });
 
 // ==================== AI STATUS CHECK ====================
@@ -382,29 +388,109 @@ function loadTimeline() {
         return;
     }
 
-    container.innerHTML = userEvents.sort((a, b) => b.year - a.year).map(event => `
-        <div class="timeline-event">
-            <div class="event-card">
-                <div class="event-header">
-                    <div class="event-date"><i class="fas fa-calendar"></i> ${event.year}</div>
-                    <div class="event-mood"><i class="fas fa-${event.dimension === 'past' ? 'history' : event.dimension === 'future' ? 'rocket' : 'clock'}"></i> ${event.dimension}</div>
-                </div>
-                <div class="event-title">${event.title}</div>
-                <div class="event-description">${event.description}</div>
-                ${event.dimension === 'future' ? `
-                    <div class="probability-meter">
-                        <div class="meter-label"><span>probability</span><span>${event.probability}%</span></div>
-                        <div class="meter-bar"><div class="meter-fill" style="width: ${event.probability}%;"></div></div>
+    container.innerHTML = userEvents.sort((a, b) => b.year - a.year).map(event => {
+        // Check if it's a paradox event
+        if (event.isParadox) {
+            return `
+                <div class="timeline-event paradox-event" style="border-left-color: ${event.effectColor || 'var(--warning)'};">
+                    <div class="event-card paradox-card">
+                        <div class="event-header">
+                            <div class="event-date">
+                                <i class="fas fa-calendar"></i> ${event.year}
+                                <span class="paradox-badge">${event.aiGenerated ? '🤖 AI' : '⚡'} PARADOX</span>
+                            </div>
+                            <div class="event-mood" style="background: ${event.effectColor || 'var(--warning)'}; color: white;">
+                                <i class="fas fa-exclamation-triangle"></i> quantum anomaly
+                            </div>
+                        </div>
+                        
+                        <div class="event-title paradox-title">${event.title}</div>
+                        <div class="event-description paradox-description">${event.description}</div>
+                        
+                        <div class="probability-meter">
+                            <div class="meter-label">
+                                <span>reality stability</span>
+                                <span>${100 - (event.probability || 0)}%</span>
+                            </div>
+                            <div class="meter-bar">
+                                <div class="meter-fill" style="width: ${100 - (event.probability || 0)}%; background: var(--warning);"></div>
+                            </div>
+                        </div>
+                        
+                        ${event.gameData ? `
+                            <div class="paradox-game">
+                                <p class="game-message">${event.gameData.message}</p>
+                                <div class="game-options">
+                                    ${event.gameData.options.map((opt, index) => `
+                                        <button class="game-option" onclick="playParadoxGame('${event.id}', ${index})">
+                                            ${opt}
+                                        </button>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        ` : ''}
+                        
+                        <div class="paradox-facts">
+                            <div class="fact">
+                                <i class="fas fa-history"></i>
+                                <span>originated from: "${event.originalEvent || 'unknown'}" (${event.originalYear || '??'})</span>
+                            </div>
+                            <div class="fact">
+                                <i class="fas fa-gamepad"></i>
+                                <span>interactions: ${event.interactions || 0}</span>
+                            </div>
+                        </div>
+                        
+                        <div class="event-actions">
+                            <button class="event-btn" onclick="exploreParadox('${event.id}')" style="background: var(--warning); color: white;">
+                                <i class="fas fa-search"></i> explore paradox
+                            </button>
+                            <button class="event-btn" onclick="resolveParadox('${event.id}')" style="background: var(--success); color: white;">
+                                <i class="fas fa-check"></i> resolve timeline
+                            </button>
+                            <button class="event-btn" onclick="deleteEvent('${event.id}')" style="color: var(--error);">
+                                <i class="fas fa-trash"></i> delete
+                            </button>
+                        </div>
+                        
+                        ${event.consequences && event.consequences.length > 0 ? `
+                            <div class="paradox-consequences">
+                                <p><i class="fas fa-crystal-ball"></i> possible outcomes:</p>
+                                <ul>
+                                    ${event.consequences.map(con => `<li>${con}</li>`).join('')}
+                                </ul>
+                            </div>
+                        ` : ''}
                     </div>
-                ` : ''}
-                <div class="event-actions">
-                    <button class="event-btn" onclick="exploreAlternate('${event.id}')"><i class="fas fa-code-branch"></i> explore</button>
-                    <button class="event-btn" onclick="createParadox('${event.id}')"><i class="fas fa-exclamation-triangle"></i> paradox</button>
-                    <button class="event-btn" onclick="deleteEvent('${event.id}')" style="color: var(--error);"><i class="fas fa-trash"></i> delete</button>
                 </div>
-            </div>
-        </div>
-    `).join('');
+            `;
+        } else {
+            // Regular event display
+            return `
+                <div class="timeline-event">
+                    <div class="event-card">
+                        <div class="event-header">
+                            <div class="event-date"><i class="fas fa-calendar"></i> ${event.year}</div>
+                            <div class="event-mood"><i class="fas fa-${event.dimension === 'past' ? 'history' : event.dimension === 'future' ? 'rocket' : 'clock'}"></i> ${event.dimension}</div>
+                        </div>
+                        <div class="event-title">${event.title}</div>
+                        <div class="event-description">${event.description}</div>
+                        ${event.dimension === 'future' ? `
+                            <div class="probability-meter">
+                                <div class="meter-label"><span>probability</span><span>${event.probability}%</span></div>
+                                <div class="meter-bar"><div class="meter-fill" style="width: ${event.probability}%;"></div></div>
+                            </div>
+                        ` : ''}
+                        <div class="event-actions">
+                            <button class="event-btn" onclick="exploreAlternate('${event.id}')"><i class="fas fa-code-branch"></i> explore</button>
+                            <button class="event-btn" onclick="createParadox('${event.id}')"><i class="fas fa-exclamation-triangle"></i> paradox</button>
+                            <button class="event-btn" onclick="deleteEvent('${event.id}')" style="color: var(--error);"><i class="fas fa-trash"></i> delete</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+    }).join('');
 }
 
 // ==================== MEMORIES ====================
@@ -482,7 +568,7 @@ async function deleteMemory(memoryId) {
     await deleteEvent(memoryId);
 }
 
-// Time ago helper function (add this if you don't have it)
+// Time ago helper function
 function timeAgo(timestamp) {
     const seconds = Math.floor((Date.now() - timestamp) / 1000);
     
@@ -508,17 +594,114 @@ function timeAgo(timestamp) {
 // ==================== UNIVERSES ====================
 function loadUniverses() {
     const container = document.getElementById('universesGrid');
-    container.innerHTML = universes.map(universe => `
-        <div class="card" onclick="enterUniverse('${universe.name}')">
-            <div class="card-icon"><i class="fas ${universe.icon}"></i></div>
-            <div class="card-title">${universe.name}</div>
-            <div class="card-description">${universe.description}</div>
-            <div class="card-meta">
-                <i class="fas fa-${universe.stability === 'stable' ? 'check-circle' : 'exclamation-circle'}" style="color: ${universe.stability === 'stable' ? 'var(--success)' : 'var(--warning)'};"></i>
-                ${universe.stability} · ${universe.divergence} divergence
+    
+    // Get current universe from localStorage or default to 'alpha prime'
+    const currentUniverse = localStorage.getItem('chrono_current_universe') || 'alpha prime';
+    
+    container.innerHTML = universes.map(universe => {
+        const isActive = universe.name === currentUniverse;
+        
+        return `
+            <div class="universe-card ${isActive ? 'active-universe' : ''}" onclick="selectUniverse('${universe.name}')">
+                <div class="universe-icon">
+                    <i class="fas ${universe.icon}"></i>
+                </div>
+                <div class="universe-name">${universe.name}</div>
+                <div class="universe-description">${universe.description}</div>
+                <div class="universe-meta">
+                    <span class="universe-stability ${universe.stability}">
+                        <i class="fas fa-${universe.stability === 'stable' ? 'check-circle' : 'exclamation-circle'}"></i>
+                        ${universe.stability}
+                    </span>
+                    <span class="universe-divergence">${universe.divergence} divergence</span>
+                </div>
+                ${isActive ? '<div class="active-badge"><i class="fas fa-check"></i> Current Universe</div>' : ''}
             </div>
-        </div>
-    `).join('');
+        `;
+    }).join('');
+    
+    // Update theme based on selected universe
+    updateUniverseTheme(currentUniverse);
+}
+
+// Select a different universe
+function selectUniverse(universeName) {
+    console.log('🌌 Selecting universe:', universeName);
+    
+    // Save to localStorage
+    localStorage.setItem('chrono_current_universe', universeName);
+    currentUniverse = universeName;
+    
+    // Show toast notification
+    showToast(`🌌 Entering ${universeName}...`, 'success');
+    
+    // Reload universes to update active state
+    loadUniverses();
+    
+    // Update theme based on selected universe
+    updateUniverseTheme(universeName);
+    
+    // Apply universe effects to other parts of the app
+    applyUniverseEffects(universeName);
+}
+
+// Update theme based on selected universe
+function updateUniverseTheme(universeName) {
+    const root = document.documentElement;
+    
+    // Remove any existing universe classes
+    document.body.classList.remove('universe-alpha', 'universe-beta', 'universe-gamma', 'universe-delta');
+    
+    // Add class for current universe
+    switch(universeName) {
+        case 'alpha prime':
+            document.body.classList.add('universe-alpha');
+            root.style.setProperty('--primary', '#3b82f6');
+            root.style.setProperty('--secondary', '#8b5cf6');
+            break;
+        case 'beta mirror':
+            document.body.classList.add('universe-beta');
+            root.style.setProperty('--primary', '#70c8b0');
+            root.style.setProperty('--secondary', '#6c6cf0');
+            break;
+        case 'gamma dreams':
+            document.body.classList.add('universe-gamma');
+            root.style.setProperty('--primary', '#b088e0');
+            root.style.setProperty('--secondary', '#ec4899');
+            break;
+        case 'delta void':
+            document.body.classList.add('universe-delta');
+            root.style.setProperty('--primary', '#8e8e9a');
+            root.style.setProperty('--secondary', '#5e5e6a');
+            break;
+    }
+}
+
+// Apply universe effects to other parts of the app
+function applyUniverseEffects(universeName) {
+    // Change timeline line color based on universe
+    const timelineLine = document.querySelector('.timeline-line');
+    if (timelineLine) {
+        switch(universeName) {
+            case 'alpha prime':
+                timelineLine.style.background = 'linear-gradient(to bottom, transparent, var(--secondary), var(--secondary), transparent)';
+                break;
+            case 'beta mirror':
+                timelineLine.style.background = 'linear-gradient(to bottom, transparent, #70c8b0, #70c8b0, transparent)';
+                break;
+            case 'gamma dreams':
+                timelineLine.style.background = 'linear-gradient(to bottom, transparent, #b088e0, #b088e0, transparent)';
+                break;
+            case 'delta void':
+                timelineLine.style.background = 'linear-gradient(to bottom, transparent, #8e8e9a, #8e8e9a, transparent)';
+                break;
+        }
+    }
+}
+
+// Get current universe
+function getCurrentUniverse() {
+    return localStorage.getItem('chrono_current_universe') || 'alpha prime';
 }
 
 // ==================== CAPSULES ====================
@@ -890,17 +1073,6 @@ async function exploreAlternate(eventId) {
             }
         });
         
-        // Also activate the nav-link for alternate if it exists
-        document.querySelectorAll('.nav-link').forEach(link => {
-            if (link.textContent.includes('universes')) {
-                // Don't activate universes
-            } else if (link.textContent.includes('capsules')) {
-                // Don't activate capsules
-            } else if (link.textContent.includes('timeline')) {
-                // Don't activate timeline
-            }
-        });
-        
         // Load alternate paths
         loadAlternatePaths();
         
@@ -996,7 +1168,7 @@ function loadAlternatePaths() {
         
         return `
             <div class="alternate-path-card ${hasAI ? 'ai-generated' : ''}">
-                ${hasAI ? '<div></div>' : ''}
+                ${hasAI ? '<div class="ai-badge"><i class="fas fa-robot"></i> AI Generated</div>' : ''}
                 
                 <div class="alternate-header">
                     <div class="alternate-title">
@@ -1260,34 +1432,327 @@ function generateInsight() {
     return insights[Math.floor(Math.random() * insights.length)];
 }
 
-// ==================== CREATE PARADOX ====================
+// ==================== AI-POWERED ENHANCED PARADOX ====================
+
+// Base paradox effects (AI will enhance these)
+const baseParadoxEffects = [
+    {
+        title: '🌀 time loop detected',
+        description: 'you\'re now living the same moment repeatedly',
+        effect: 'time_loop',
+        color: '#ff6b6b'
+    },
+    {
+        title: '👻 alternate you appeared',
+        description: 'a version of you from another timeline just appeared',
+        effect: 'doppelganger',
+        color: '#4ecdc4'
+    },
+    {
+        title: '⚡ timeline fracture',
+        description: 'reality is glitching around you',
+        effect: 'fracture',
+        color: '#a363d9'
+    },
+    {
+        title: '🔄 cause & effect reversed',
+        description: 'effects are happening before causes',
+        effect: 'reversed',
+        color: '#ff9f1c'
+    },
+    {
+        title: '🌌 parallel universe merge',
+        description: 'two timelines are colliding',
+        effect: 'merge',
+        color: '#e71d36'
+    }
+];
+
+// AI-enhanced paradox creation
 async function createParadox(eventId) {
-    showToast('⚠️ timeline paradox detected', 'warning');
-    showLoading('creating paradox...');
+    console.log('⚡ Creating AI-powered paradox from event:', eventId);
+    
+    const event = events.find(e => e.id === eventId);
+    if (!event) {
+        console.error('Event not found:', eventId);
+        return;
+    }
+
+    if (!currentUser) {
+        showToast('please login first', 'error');
+        return;
+    }
+
+    showToast('🤖 AI is generating a unique paradox...', 'success');
+    showLoading('reality is glitching...');
+
+    // Pick a random base effect
+    const baseEffect = baseParadoxEffects[Math.floor(Math.random() * baseParadoxEffects.length)];
+    
+    let paradoxTitle = baseEffect.title;
+    let paradoxDescription = baseEffect.description;
+    let paradoxGame = null;
+    let paradoxConsequences = [];
+
+    // Enhance with AI if available
+    if (isPuterAvailable()) {
+        try {
+            const prompt = `Based on this real event: "${event.title}: ${event.description}" (Year: ${event.year})
+            
+            Create a fun, creative paradox scenario with:
+            1. A catchy title (max 8 words) - start with an emoji
+            2. A funny description of what's happening (2 sentences)
+            3. A mini-game with 3 choices the user can make
+            4. 3 possible consequences for those choices
+            
+            Return as JSON:
+            {
+                "title": "your title here",
+                "description": "your description here",
+                "game": {
+                    "message": "what happens in the game?",
+                    "options": ["option 1", "option 2", "option 3"]
+                },
+                "consequences": ["consequence 1", "consequence 2", "consequence 3"]
+            }`;
+            
+            const response = await puter.ai.chat(prompt);
+            const aiContent = extractTextFromPuterResponse(response);
+            
+            try {
+                const parsed = JSON.parse(aiContent);
+                paradoxTitle = parsed.title || baseEffect.title;
+                paradoxDescription = parsed.description || baseEffect.description;
+                paradoxGame = parsed.game || null;
+                paradoxConsequences = parsed.consequences || [];
+                
+                console.log('✅ AI generated paradox:', parsed);
+            } catch (e) {
+                console.log('Could not parse AI response, using base effect');
+            }
+        } catch (error) {
+            console.log('AI generation failed, using base effect');
+        }
+    }
 
     const paradoxEvent = {
         userId: currentUser.uid,
-        title: '⚠️ timeline paradox',
-        description: 'you created a paradox by interacting with your own timeline',
+        title: paradoxTitle,
+        description: paradoxDescription,
+        originalEvent: event.title,
+        originalYear: event.year,
+        effect: baseEffect.effect,
+        effectColor: baseEffect.color,
         year: new Date().getFullYear(),
         dimension: 'present',
-        probability: 0,
-        createdAt: Date.now()
+        probability: Math.floor(Math.random() * 10),
+        createdAt: Date.now(),
+        isParadox: true,
+        gameData: paradoxGame,
+        consequences: paradoxConsequences,
+        interactions: 0,
+        aiGenerated: isPuterAvailable()
     };
 
     try {
         const docRef = await db.collection('users').doc(currentUser.uid).collection('events').add(paradoxEvent);
         paradoxEvent.id = docRef.id;
         events.push(paradoxEvent);
+        
+        hideLoading();
+        
+        // Show fun message
+        if (isPuterAvailable()) {
+            showToast('🤖 AI-crafted paradox created!', 'success');
+        } else {
+            showToast('🌀 paradox created!', 'warning');
+        }
+        
+        // Trigger visual effects
+        triggerParadoxAnimation(baseEffect.effect);
+        
+        // Refresh timeline
         loadTimeline();
         updateStats();
+        
+    } catch (error) {
         hideLoading();
-        showToast('⚠️ paradox created!', 'warning');
+        console.error('Error creating paradox:', error);
+        showToast(error.message, 'error');
+    }
+}
+
+// Play paradox mini-game
+async function playParadoxGame(paradoxId, optionIndex) {
+    const paradox = events.find(e => e.id === paradoxId);
+    if (!paradox || !paradox.gameData) return;
+    
+    const consequence = paradox.consequences[optionIndex] || "The universe shrugs. Nothing happens. Or does it?";
+    
+    showToast('🎮 Playing with reality...', 'success');
+    showLoading('calculating consequences...');
+    
+    // Increment interaction count
+    paradox.interactions = (paradox.interactions || 0) + 1;
+    
+    // Update in database
+    try {
+        await db.collection('users').doc(currentUser.uid).collection('events').doc(paradoxId).update({
+            interactions: paradox.interactions
+        });
+    } catch (error) {
+        console.error('Error updating paradox:', error);
+    }
+    
+    setTimeout(() => {
+        hideLoading();
+        
+        // Show the consequence
+        showToast(`✨ ${consequence}`, 'success');
+        
+        // Create a memory of this paradox interaction
+        const memoryEvent = {
+            userId: currentUser.uid,
+            title: '📜 paradox memory',
+            description: `You chose "${paradox.gameData.options[optionIndex]}" in the ${paradox.title} paradox. ${consequence}`,
+            year: new Date().getFullYear(),
+            dimension: 'present',
+            probability: 100,
+            createdAt: Date.now(),
+            isParadoxMemory: true
+        };
+        
+        // Optionally save this memory
+        db.collection('users').doc(currentUser.uid).collection('events').add(memoryEvent);
+        
+    }, 2000);
+}
+
+// Explore a paradox deeper
+async function exploreParadox(paradoxId) {
+    const paradox = events.find(e => e.id === paradoxId);
+    if (!paradox) return;
+    
+    showToast('🔍 Exploring deeper into the paradox...', 'success');
+    showLoading('reality is bending...');
+    
+    // Create an alternate path FROM the paradox
+    const deeperParadox = {
+        userId: currentUser.uid,
+        title: `🌀 Deeper: ${paradox.title}`,
+        description: `Exploring the depths of: ${paradox.description}`,
+        year: new Date().getFullYear() + 1,
+        originalParadoxId: paradox.id,
+        dimension: 'future',
+        probability: Math.floor(Math.random() * 30),
+        divergence: Math.min(100, (paradox.divergence || 50) + 30),
+        createdAt: Date.now(),
+        isParadox: true,
+        parentParadox: paradox.title
+    };
+
+    try {
+        const docRef = await db.collection('users').doc(currentUser.uid).collection('events').add(deeperParadox);
+        deeperParadox.id = docRef.id;
+        events.push(deeperParadox);
+        
+        hideLoading();
+        showToast('🌀 Deeper paradox revealed!', 'success');
+        
+        // Refresh timeline
+        loadTimeline();
+        
     } catch (error) {
         hideLoading();
         console.error('Error:', error);
         showToast(error.message, 'error');
     }
+}
+
+// Resolve a paradox
+async function resolveParadox(paradoxId) {
+    const paradox = events.find(e => e.id === paradoxId);
+    if (!paradox) return;
+    
+    showToast('⚡ Attempting to resolve paradox...', 'success');
+    showLoading('stabilizing timeline...');
+    
+    // Create a resolution event
+    const resolutionEvent = {
+        userId: currentUser.uid,
+        title: '✅ paradox resolved',
+        description: `You successfully resolved the "${paradox.title}" paradox. The timeline is stable again.`,
+        year: new Date().getFullYear(),
+        dimension: 'present',
+        probability: 100,
+        createdAt: Date.now(),
+        resolvedParadoxId: paradoxId
+    };
+    
+    try {
+        // Add resolution to timeline
+        const docRef = await db.collection('users').doc(currentUser.uid).collection('events').add(resolutionEvent);
+        resolutionEvent.id = docRef.id;
+        events.push(resolutionEvent);
+        
+        // Delete the paradox
+        await db.collection('users').doc(currentUser.uid).collection('events').doc(paradoxId).delete();
+        events = events.filter(e => e.id !== paradoxId);
+        
+        hideLoading();
+        showToast('✅ Paradox resolved! Timeline stabilized.', 'success');
+        
+        // Refresh timeline
+        loadTimeline();
+        updateStats();
+        
+    } catch (error) {
+        hideLoading();
+        console.error('Error:', error);
+        showToast(error.message, 'error');
+    }
+}
+
+// Visual effects
+function triggerParadoxAnimation(effect) {
+    // Add glitch class to body
+    document.body.classList.add('paradox-active');
+    
+    // Create floating particles
+    for (let i = 0; i < 15; i++) {
+        setTimeout(() => createParadoxParticle(effect), i * 100);
+    }
+    
+    // Shake the screen slightly
+    const mainContent = document.querySelector('.main-content');
+    if (mainContent) {
+        mainContent.style.animation = 'shake 0.5s ease';
+    }
+    
+    setTimeout(() => {
+        document.body.classList.remove('paradox-active');
+        if (mainContent) {
+            mainContent.style.animation = '';
+        }
+    }, 2000);
+}
+
+function createParadoxParticle(effect) {
+    const symbols = ['🌀', '⚡', '🌌', '👻', '🎲', '🔄', '🤯', '⚡', '🌟', '💫'];
+    const particle = document.createElement('div');
+    particle.className = 'paradox-particle';
+    particle.innerHTML = symbols[Math.floor(Math.random() * symbols.length)];
+    particle.style.left = Math.random() * 100 + '%';
+    particle.style.top = Math.random() * 100 + '%';
+    particle.style.fontSize = (20 + Math.random() * 30) + 'px';
+    particle.style.position = 'fixed';
+    particle.style.pointerEvents = 'none';
+    particle.style.zIndex = '9999';
+    particle.style.animation = `floatParticle ${2 + Math.random() * 4}s ease-out forwards`;
+    particle.style.opacity = '0.7';
+    document.body.appendChild(particle);
+    
+    setTimeout(() => particle.remove(), 4000);
 }
 
 // ==================== PUTER.AI INTEGRATION ====================
@@ -1763,129 +2228,3 @@ window.addEventListener('scroll', function() {
         fab.classList.remove('active');
     }
 });
-
-// ==================== ENHANCED PARALLEL UNIVERSES ====================
-function loadUniverses() {
-    const container = document.getElementById('universesGrid');
-    
-    // Get current universe from localStorage or default to 'alpha prime'
-    const currentUniverse = localStorage.getItem('chrono_current_universe') || 'alpha prime';
-    
-    container.innerHTML = universes.map(universe => {
-        const isActive = universe.name === currentUniverse;
-        
-        return `
-            <div class="universe-card ${isActive ? 'active-universe' : ''}" onclick="selectUniverse('${universe.name}')">
-                <div class="universe-icon">
-                    <i class="fas ${universe.icon}"></i>
-                </div>
-                <div class="universe-name">${universe.name}</div>
-                <div class="universe-description">${universe.description}</div>
-                <div class="universe-meta">
-                    <span class="universe-stability ${universe.stability}">
-                        <i class="fas fa-${universe.stability === 'stable' ? 'check-circle' : 'exclamation-circle'}"></i>
-                        ${universe.stability}
-                    </span>
-                    <span class="universe-divergence">${universe.divergence} divergence</span>
-                </div>
-                ${isActive ? '<div class="active-badge"><i class="fas fa-check"></i> Current Universe</div>' : ''}
-            </div>
-        `;
-    }).join('');
-    
-    // Update theme based on selected universe
-    updateUniverseTheme(currentUniverse);
-}
-
-// Select a different universe
-function selectUniverse(universeName) {
-    console.log('🌌 Selecting universe:', universeName);
-    
-    // Save to localStorage
-    localStorage.setItem('chrono_current_universe', universeName);
-    
-    // Show toast notification
-    showToast(`🌌 Entering ${universeName}...`, 'success');
-    
-    // Reload universes to update active state
-    loadUniverses();
-    
-    // Update theme based on selected universe
-    updateUniverseTheme(universeName);
-    
-    // Apply universe effects to other parts of the app
-    applyUniverseEffects(universeName);
-}
-
-// Update theme based on selected universe
-function updateUniverseTheme(universeName) {
-    const root = document.documentElement;
-    
-    // Remove any existing universe classes
-    document.body.classList.remove('universe-alpha', 'universe-beta', 'universe-gamma', 'universe-delta');
-    
-    // Add class for current universe
-    switch(universeName) {
-        case 'alpha prime':
-            document.body.classList.add('universe-alpha');
-            root.style.setProperty('--primary', '#3b82f6');
-            root.style.setProperty('--secondary', '#6c6cf0');
-            break;
-        case 'beta mirror':
-            document.body.classList.add('universe-beta');
-            // Reverse colors? Add custom effects
-            root.style.setProperty('--primary', '#70c8b0');
-            root.style.setProperty('--secondary', '#6c6cf0');
-            break;
-        case 'gamma dreams':
-            document.body.classList.add('universe-gamma');
-            // Dreamy colors
-            root.style.setProperty('--primary', '#b088e0');
-            root.style.setProperty('--secondary', '#ec4899');
-            break;
-        case 'delta void':
-            document.body.classList.add('universe-delta');
-            // Void colors - more monochrome
-            root.style.setProperty('--primary', '#8e8e9a');
-            root.style.setProperty('--secondary', '#5e5e6a');
-            break;
-    }
-}
-
-// Apply universe effects to other parts of the app
-function applyUniverseEffects(universeName) {
-    // Change timeline line color based on universe
-    const timelineLine = document.querySelector('.timeline-line');
-    if (timelineLine) {
-        switch(universeName) {
-            case 'alpha prime':
-                timelineLine.style.background = 'linear-gradient(to bottom, transparent, var(--secondary), var(--secondary), transparent)';
-                break;
-            case 'beta mirror':
-                timelineLine.style.background = 'linear-gradient(to bottom, transparent, #70c8b0, #70c8b0, transparent)';
-                break;
-            case 'gamma dreams':
-                timelineLine.style.background = 'linear-gradient(to bottom, transparent, #b088e0, #b088e0, transparent)';
-                break;
-            case 'delta void':
-                timelineLine.style.background = 'linear-gradient(to bottom, transparent, #8e8e9a, #8e8e9a, transparent)';
-                break;
-        }
-    }
-    
-    // Show different welcome messages based on universe
-    const messages = {
-        'alpha prime': 'Welcome to your home timeline',
-        'beta mirror': 'Everything is reversed here...',
-        'gamma dreams': 'Your thoughts shape reality',
-        'delta void': 'The space between timelines...'
-    };
-    
-    // Store universe preference for other functions
-    currentUniverse = universeName;
-}
-
-// Get current universe
-function getCurrentUniverse() {
-    return localStorage.getItem('chrono_current_universe') || 'alpha prime';
-}
