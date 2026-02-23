@@ -3,31 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chrono</title>
+    <title>Chrono · timeline journal</title>
+    
+    <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <link rel="stylesheet" href="styles.css">
     
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
 
+    <!-- Puter.js - Free AI Integration -->
+    <script src="https://js.puter.com/v2/"></script>
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <!-- Theme Toggle (visible on both auth and main pages) -->
-    <div style="position: fixed; top: 1rem; right: 1rem; z-index: 1001;">
-        <div class="theme-toggle">
-            <button class="theme-btn active" onclick="setTheme('light')">
-                <i class="fas fa-sun"></i>
-                light
-            </button>
-            <button class="theme-btn" onclick="setTheme('dark')">
-                <i class="fas fa-moon"></i>
-                dark
-            </button>
-        </div>
-    </div>
-
     <!-- Auth Page -->
     <div class="auth-page" id="authPage">
         <div class="auth-card">
@@ -60,14 +52,14 @@
                     sign in
                 </button>
                 
-                <div class="divider">
+                <!-- <div class="divider">
                     <span>or</span>
                 </div>
                 
                 <button class="btn btn-google" onclick="loginWithGoogle()">
                     <i class="fab fa-google"></i>
                     continue with google
-                </button>
+                </button> -->
             </div>
 
             <!-- Register Form -->
@@ -90,14 +82,14 @@
                     create account
                 </button>
                 
-                <div class="divider">
+                <!-- <div class="divider">
                     <span>or</span>
                 </div>
                 
                 <button class="btn btn-google" onclick="loginWithGoogle()">
                     <i class="fab fa-google"></i>
                     continue with google
-                </button>
+                </button> -->
             </div>
         </div>
     </div>
@@ -128,6 +120,17 @@
                     </div>
                 </div>
                 <div class="nav-right">
+                    <!-- Theme Toggle -->
+                    <div class="theme-toggle-container">
+                        <div class="theme-toggle">
+                            <button class="theme-btn active" onclick="setTheme('light')">
+                                <i class="fas fa-sun"></i>
+                            </button>
+                            <button class="theme-btn" onclick="setTheme('dark')">
+                                <i class="fas fa-moon"></i>
+                            </button>
+                        </div>
+                    </div>
                     <div class="user-profile" onclick="switchPage('profile')">
                         <span class="user-name" id="navName">Loading...</span>
                         <div class="user-avatar" id="navAvatar">...</div>
@@ -135,6 +138,12 @@
                 </div>
             </div>
         </nav>
+
+        <!-- AI Status Indicator -->
+        <div class="ai-status" id="aiStatus">
+            <i class="fas fa-robot" style="color: #2563eb;"></i>
+            <span>AI <span id="aiStatusText">checking...</span></span>
+        </div>
 
         <!-- Main Layout -->
         <div class="main-layout">
@@ -145,15 +154,15 @@
                         <i class="fas fa-user"></i>
                         your timeline
                     </div>
-                    <div class="menu-item active">
+                    <div class="menu-item active" onclick="switchPage('timeline')">
                         <i class="fas fa-stream"></i>
                         <span>main timeline</span>
                     </div>
-                    <div class="menu-item">
+                    <div class="menu-item" onclick="switchPage('alternate')">
                         <i class="fas fa-code-branch"></i>
                         <span>alternate paths</span>
                     </div>
-                    <div class="menu-item">
+                    <div class="menu-item" onclick="switchPage('memories')">
                         <i class="fas fa-clock"></i>
                         <span>memories</span>
                     </div>
@@ -196,6 +205,30 @@
                     </div>
                 </div>
 
+                <!-- Alternate Paths Page -->
+                <div class="page" id="alternatePage">
+                    <div class="page-header">
+                        <h2>alternate paths</h2>
+                        <p>different versions of your timeline</p>
+                    </div>
+
+                    <div class="timeline-events" id="alternateEvents">
+                        <!-- Alternate events will be inserted here -->
+                    </div>
+                </div>
+
+                <!-- Memories Page -->
+                <div class="page" id="memoriesPage">
+                    <div class="page-header">
+                        <h2>memories</h2>
+                        <p>past moments to cherish</p>
+                    </div>
+
+                    <div class="cards-grid" id="memoriesGrid">
+                        <!-- Memories will be inserted here -->
+                    </div>
+                </div>
+
                 <!-- Universes Page -->
                 <div class="page" id="universesPage">
                     <div class="page-header">
@@ -228,33 +261,31 @@
                     </div>
 
                     <div class="event-card">
-                        <div style="display: flex; align-items: center; gap: 2rem; margin-bottom: 2rem;">
-                            <div style="width: 80px; height: 80px; background: var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 2.5rem; color: white;" id="profileAvatar">
-                                A
-                            </div>
-                            <div>
+                        <div class="profile-header">
+                            <div class="profile-avatar-large" id="profileAvatar">A</div>
+                            <div class="profile-info">
                                 <h3 id="profileName">Loading...</h3>
-                                <p style="color: var(--text-secondary);" id="profileEmail">loading...</p>
-                                <p style="color: var(--text-tertiary);">member since <span id="profileDate">2024</span></p>
+                                <p class="profile-email" id="profileEmail">loading...</p>
+                                <p class="profile-member">member since <span id="profileDate">2024</span></p>
                             </div>
                         </div>
 
-                        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 2rem;">
-                            <div style="text-align: center; padding: 1rem; background: var(--surface-light); border-radius: var(--radius-md);">
-                                <div style="font-size: 1.5rem; font-weight: 600; color: var(--primary);" id="profileEvents">0</div>
-                                <div style="font-size: 0.8rem; color: var(--text-secondary);">events</div>
+                        <div class="profile-stats-grid">
+                            <div class="profile-stat-card">
+                                <div class="profile-stat-value" id="profileEvents">0</div>
+                                <div class="profile-stat-label">events</div>
                             </div>
-                            <div style="text-align: center; padding: 1rem; background: var(--surface-light); border-radius: var(--radius-md);">
-                                <div style="font-size: 1.5rem; font-weight: 600; color: var(--primary);" id="profileUniverses">4</div>
-                                <div style="font-size: 0.8rem; color: var(--text-secondary);">universes</div>
+                            <div class="profile-stat-card">
+                                <div class="profile-stat-value" id="profileUniverses">4</div>
+                                <div class="profile-stat-label">universes</div>
                             </div>
-                            <div style="text-align: center; padding: 1rem; background: var(--surface-light); border-radius: var(--radius-md);">
-                                <div style="font-size: 1.5rem; font-weight: 600; color: var(--primary);" id="profileCapsules">0</div>
-                                <div style="font-size: 0.8rem; color: var(--text-secondary);">capsules</div>
+                            <div class="profile-stat-card">
+                                <div class="profile-stat-value" id="profileCapsules">0</div>
+                                <div class="profile-stat-label">capsules</div>
                             </div>
                         </div>
 
-                        <button class="btn" style="background: var(--error);" onclick="logout()">
+                        <button class="btn btn-danger" onclick="logout()">
                             <i class="fas fa-sign-out-alt"></i>
                             sign out
                         </button>
@@ -292,22 +323,35 @@
                     <div class="widget-header">
                         <h4>quick tips</h4>
                     </div>
-                    <ul style="list-style: none; color: var(--text-secondary); font-size: 0.85rem;">
-                        <li style="margin-bottom: 0.75rem;">• click + to add events</li>
-                        <li style="margin-bottom: 0.75rem;">• explore alternate timelines</li>
-                        <li style="margin-bottom: 0.75rem;">• create time capsules</li>
+                    <ul class="tips-list">
+                        <li>• click + to add events</li>
+                        <li>• explore alternate timelines</li>
+                        <li>• create time capsules</li>
                         <li>• toggle theme in top right</li>
+                        <li>• AI generates descriptions</li>
                     </ul>
                 </div>
             </aside>
         </div>
 
         <!-- Floating Action Button -->
-        <div class="fab" onclick="openCreateModal()">
-            <i class="fas fa-plus"></i>
+        <div class="fab-container">
+            <div class="fab-options" id="fabOptions">
+                <div class="fab-option" onclick="openCreateModal(); toggleFabMenu()">
+                    <i class="fas fa-stream" style="color: var(--primary);"></i>
+                    <span>add timeline event</span>
+                </div>
+                <div class="fab-option" onclick="openCapsuleModal(); toggleFabMenu()">
+                    <i class="fas fa-hourglass" style="color: var(--secondary);"></i>
+                    <span>create time capsule</span>
+                </div>
+            </div>
+            <div class="fab" onclick="toggleFabMenu()">
+                <i class="fas fa-plus" id="fabIcon"></i>
+            </div>
         </div>
 
-        <!-- Create Event Modal -->
+        <!-- Create Event Modal (WITH AI BUTTON) -->
         <div class="modal" id="createModal">
             <div class="modal-content">
                 <div class="modal-header">
@@ -317,12 +361,17 @@
 
                 <div class="form-group">
                     <label>title</label>
-                    <input type="text" id="eventTitle" placeholder="what happened?">
+                    <div style="display: flex; gap: 0.5rem;">
+                        <input type="text" id="eventTitle" placeholder="what happened?" style="flex: 1;">
+                        <button type="button" class="btn btn-ai" onclick="showAISuggestions()" style="width: auto; padding: 0.875rem 1.5rem; background: var(--primary);" title="Get AI suggestions">
+                            <i class="fas fa-magic"></i>
+                        </button>
+                    </div>
                 </div>
 
                 <div class="form-group">
                     <label>description</label>
-                    <textarea id="eventDescription" placeholder="describe the moment..."></textarea>
+                    <textarea id="eventDescription" placeholder="describe the moment... (AI will generate if empty)"></textarea>
                 </div>
 
                 <div class="form-group">
@@ -348,10 +397,88 @@
                     </div>
                 </div>
 
-                <button class="btn" onclick="createEvent()">
+                <button class="btn" onclick="createTimelineEvent()">
                     <i class="fas fa-plus"></i>
                     add to timeline
                 </button>
+            </div>
+        </div>
+
+        <!-- Create Capsule Modal (with fixed button ID) -->
+        <div class="modal" id="createCapsuleModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>create time capsule</h3>
+                    <i class="fas fa-times close-btn" onclick="closeCapsuleModal()"></i>
+                </div>
+
+                <div class="form-group">
+                    <label>📨 message to future self</label>
+                    <textarea id="capsuleMessage" placeholder="what would you tell future you?" rows="4" style="width: 100%; padding: 1rem; background: var(--surface-light); border: 1px solid var(--border); border-radius: var(--radius-md); color: var(--text);"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label>⏳ open in (years)</label>
+                    <input type="number" id="capsuleYears" placeholder="10" value="10" min="1" max="100" style="width: 100%; padding: 1rem; background: var(--surface-light); border: 1px solid var(--border); border-radius: var(--radius-md); color: var(--text);">
+                </div>
+
+                <div style="display: flex; gap: 0.5rem;">
+                    <button class="btn" onclick="createCapsule()" style="flex: 2;">
+                        <i class="fas fa-hourglass"></i>
+                        seal capsule
+                    </button>
+                    <button class="btn" id="enhanceAIBtn" onclick="enhanceCapsuleMessageWithAI()" style="flex: 1; background: var(--secondary);" title="Enhance with AI">
+                        <i class="fas fa-magic"></i>
+                        enhance
+                    </button>
+                </div>
+                
+                <p style="color: var(--text-tertiary); font-size: 0.8rem; margin-top: 1rem; text-align: center;">
+                    ✨ AI can make your message more meaningful
+                </p>
+            </div>
+        </div>
+
+                <!-- Memory Detail Modal -->
+        <div class="modal" id="memoryDetailModal">
+            <div class="modal-content memory-detail-content">
+                <div class="modal-header">
+                    <h3 id="memoryDetailTitle">Memory</h3>
+                    <i class="fas fa-times close-btn" onclick="closeMemoryModal()"></i>
+                </div>
+                
+                <div class="memory-detail-body">
+                    <div class="memory-detail-year" id="memoryDetailYear">
+                        <i class="fas fa-calendar"></i>
+                        <span>2024</span>
+                    </div>
+                    
+                    <div class="memory-detail-description" id="memoryDetailDescription">
+                        Loading...
+                    </div>
+                    
+                    <div class="memory-detail-meta">
+                        <div class="memory-dimension">
+                            <i class="fas fa-history"></i>
+                            <span>Past Event</span>
+                        </div>
+                        <div class="memory-created">
+                            <i class="fas fa-clock"></i>
+                            <span id="memoryDetailCreated">Just now</span>
+                        </div>
+                    </div>
+                    
+                    <div class="memory-detail-actions">
+                        <button class="btn" onclick="exploreFromMemory()" id="memoryExploreBtn">
+                            <i class="fas fa-code-branch"></i>
+                            explore this memory
+                        </button>
+                        <button class="btn btn-danger" onclick="deleteMemory()" id="memoryDeleteBtn">
+                            <i class="fas fa-trash"></i>
+                            delete
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -362,6 +489,7 @@
         </div>
     </div>
 
+    <!-- Custom JavaScript -->
     <script src="script.js"></script>
 </body>
 </html>
